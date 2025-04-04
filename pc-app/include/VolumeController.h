@@ -37,6 +37,9 @@ private:
     std::vector<CComPtr<ISimpleAudioVolume>>
     getAudioSessionsForProcess(const std::wstring &processName);
 
+    bool setMasterVolume(float volumeLevel);
+    bool toggleMasterMute();
+
     bool setVolumeInternal(const std::wstring &processName, float volumeLevel);
     bool toggleMuteInternal(const std::wstring &processName);
 
@@ -44,12 +47,10 @@ public:
     VolumeController();
     ~VolumeController();
 
-    bool setVolume(float volumeLevel);
     bool setVolume(const std::wstring &processName, float volumeLevel);
-    bool setVolume(const std::wstring *processNames, size_t count,
+    bool setVolume(const std::vector<std::wstring> &processNames,
                    float volumeLevel);
 
-    bool toggleMute();
     bool toggleMute(const std::wstring &processName);
-    bool toggleMute(const std::wstring *processNames, size_t count);
+    bool toggleMute(const std::vector<std::wstring> &processNames);
 };

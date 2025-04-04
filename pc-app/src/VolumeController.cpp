@@ -84,6 +84,7 @@ std::wstring VolumeController::getProcessNameFromId(const DWORD &processId) {
 
 std::vector<CComPtr<ISimpleAudioVolume>>
 VolumeController::getAudioSessionsForProcess(const std::wstring &processName) {
+    // Convert processName to lowercase for case-insensitive comparison
     std::vector<CComPtr<ISimpleAudioVolume>> sessions;
     CComPtr<IAudioSessionEnumerator> pSessionEnumerator = nullptr;
     HRESULT hr = pSessionManager->GetSessionEnumerator(&pSessionEnumerator);
@@ -132,8 +133,7 @@ VolumeController::getAudioSessionsForProcess(const std::wstring &processName) {
     }
     return sessions;
 }
-bool VolumeController::setVolume(float volumeLevel) {
-    std::lock_guard<std::mutex> lock(mtx);
+bool VolumeController::setMasterVolume(float volumeLevel) {
 
     // Clip volume level to [0.0, 1.0]
     volumeLevel = std::clamp(volumeLevel, 0.0f, 1.0f);
@@ -148,6 +148,12 @@ bool VolumeController::setVolumeInternal(const std::wstring &processName,
                                          float volumeLevel) {
     // Clip volume level to [0.0, 1.0]
     volumeLevel = std::clamp(volumeLevel, 0.0f, 1.0f);
+    std::transform(processName.begin(), processName.end(), processName.begin(),
+                   ::towlower);
+
+    if (processName == L"master") {
+        return setMasterVolume(volumeLevel);
+    }
 
     for (auto &session : getAudioSessionsForProcess(processName)) {
         if (session) {
@@ -166,22 +172,21 @@ bool VolumeController::setVolume(const std::wstring &processName,
     return setVolumeInternal(processName, volumeLevel);
 }
 
-bool VolumeController::setVolume(const std::wstring *processNames, size_t count,
+bool VolumeController::setVolume(const std::vector<std::wstring> &processNames,
                                  float volumeLevel) {
     std::lock_guard<std::mutex> lock(mtx);
     // Clip volume level to [0.0, 1.0]
     volumeLevel = std::clamp(volumeLevel, 0.0f, 1.0f);
-    for (size_t i = 0; i < count; ++i) {
-        if (!setVolumeInternal(processNames[i], volumeLevel)) {
+    for (const auto &processName : processNames) {
+        if (!setVolumeInternal(processName, volumeLevel)) {
             return false;
         }
     }
     return true;
 }
 
-bool VolumeController::toggleMute() {
+bool VolumeController::toggleMasterMute() {
     // toggle master mute
-    std::lock_guard<std::mutex> lock(mtx);
 
     BOOL isMuted = FALSE;
     HRESULT hr = pEndpointVolume->GetMute(&isMuted);
@@ -192,6 +197,13 @@ bool VolumeController::toggleMute() {
 }
 
 bool VolumeController::toggleMuteInternal(const std::wstring &processName) {
+    std::transform(processName.begin(), processName.end(), processName.begin(),
+                   ::towlower);
+
+    if (processName == L"master") {
+        return toggleMasterMute();
+    }
+
     for (auto &session : getAudioSessionsForProcess(processName)) {
         if (session) {
             BOOL isMuted = FALSE;
@@ -212,11 +224,11 @@ bool VolumeController::toggleMute(const std::wstring &processName) {
     return toggleMuteInternal(processName);
 }
 
-bool VolumeController::toggleMute(const std::wstring *processNames,
-                                  size_t count) {
+bool VolumeController::toggleMute(
+    const std::vector<std::wstring> &processNames) {
     std::lock_guard<std::mutex> lock(mtx);
-    for (size_t i = 0; i < count; ++i) {
-        if (!toggleMuteInternal(processNames[i])) {
+    for (const auto &processName : processNames) {
+        if (!toggleMuteInternal(processName)) {
             return false;
         }
     }

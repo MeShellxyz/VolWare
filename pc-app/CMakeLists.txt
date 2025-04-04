@@ -1,5 +1,14 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.5)
 project(VolFlex VERSION 0.1.0)
+
+# set appropriate encoding
+if (WIN32)
+    add_compile_options(/utf-8)
+elseif(APPLE)
+    add_compile_options(-finput-charset=UTF-8)
+elseif(UNIX)
+    add_compile_options(-finput-charset=UTF-8)
+endif()
 
 include(FetchContent)
 
@@ -9,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(WIN32)
     add_compile_definitions(WINDOWS)
+    add_compile_definitions(_WIN32_WINNT=0x0601)
 elseif(APPLE)
     add_compile_definitions(MACOS)
 elseif(UNIX)
@@ -27,10 +37,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml_cpp)
 
+FetchContent_Declare(
+    boost
+    GIT_REPOSITORY https://github.com/boostorg/boost.git
+    GIT_TAG        boost-1.83.0
+)
+set(BOOST_INCLUDE_LIBRARIES asio system)
+set(BOOST_ENABLE_CMAKE ON)
+FetchContent_MakeAvailable(boost)
+
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp Boost::system Boost::asio)
