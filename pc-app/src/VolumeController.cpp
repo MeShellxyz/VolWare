@@ -1,6 +1,7 @@
 #include "VolumeController.h"
 
 #include <TlHelp32.h>
+#include <codecvt>
 
 #include <algorithm>
 #include <stdexcept>
@@ -53,7 +54,19 @@ bool VolumeController::initializeCOM() {
 std::unordered_map<DWORD, VolumeController::CacheProcessEntry>
     VolumeController::processNameCache;
 
-std::wstring VolumeController::getProcessNameFromId(const DWORD &processId) {
+std::string VolumeController::WideToUtf8(const wchar_t *wstr) {
+    if (!wstr)
+        return "";
+
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    try {
+        return converter.to_bytes(wstr);
+    } catch (const std::exception &) {
+        return "<conversion_error>";
+    }
+}
+
+std::string VolumeController::getProcessNameFromId(const DWORD &processId) {
     auto now = std::chrono::system_clock::now();
     auto it = processNameCache.find(processId);
     if (it != processNameCache.end() &&
@@ -61,7 +74,7 @@ std::wstring VolumeController::getProcessNameFromId(const DWORD &processId) {
         return it->second.name;
     }
 
-    std::wstring processName = L"<unknown>";
+    std::string processName = "<unknown>";
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                                   FALSE, processId);
     if (hProcess) {
@@ -70,21 +83,21 @@ std::wstring VolumeController::getProcessNameFromId(const DWORD &processId) {
 
         // Get the full path
         if (QueryFullProcessImageNameW(hProcess, 0, szProcessPath, &dwSize)) {
-
             WCHAR *fileName = wcsrchr(szProcessPath, L'\\');
             if (fileName) {
-                processName = fileName + 1; // Skip the backslash
+                // Convert wide string to UTF-8 using WideCharToMultiByte
+                fileName++; // Skip the backslash
+                processName = WideToUtf8(fileName);
                 processNameCache[processId] = {processName, now};
             }
         }
-        CloseHandle(hProcess);
     }
+    CloseHandle(hProcess);
     return processName;
 }
 
 std::vector<CComPtr<ISimpleAudioVolume>>
-VolumeController::getAudioSessionsForProcess(const std::wstring &processName) {
-    // Convert processName to lowercase for case-insensitive comparison
+VolumeController::getAudioSessionsForProcess(const std::string &processName) {
     std::vector<CComPtr<ISimpleAudioVolume>> sessions;
     CComPtr<IAudioSessionEnumerator> pSessionEnumerator = nullptr;
     HRESULT hr = pSessionManager->GetSessionEnumerator(&pSessionEnumerator);
@@ -96,6 +109,9 @@ VolumeController::getAudioSessionsForProcess(const std::wstring &processName) {
     if (FAILED(hr)) {
         return sessions;
     }
+    std::string processNameLower = processName;
+    std::transform(processNameLower.begin(), processNameLower.end(),
+                   processNameLower.begin(), ::towlower);
 
     for (int i = 0; i < sessionCount; i++) {
         CComPtr<IAudioSessionControl> pSessionControl = nullptr;
@@ -117,11 +133,10 @@ VolumeController::getAudioSessionsForProcess(const std::wstring &processName) {
         if (FAILED(hr)) {
             continue;
         }
-
-        std::wstring currentProcessName = getProcessNameFromId(processId);
+        std::string currentProcessName = getProcessNameFromId(processId);
         std::transform(currentProcessName.begin(), currentProcessName.end(),
                        currentProcessName.begin(), ::towlower);
-        if (currentProcessName == processName) {
+        if (currentProcessName == processNameLower) {
             CComPtr<ISimpleAudioVolume> pSimpleVolume = nullptr;
             hr = pSessionControl->QueryInterface(
                 __uuidof(ISimpleAudioVolume),
@@ -144,14 +159,15 @@ bool VolumeController::setMasterVolume(float volumeLevel) {
     return SUCCEEDED(hr);
 }
 
-bool VolumeController::setVolumeInternal(const std::wstring &processName,
+bool VolumeController::setVolumeInternal(const std::string &processName,
                                          float volumeLevel) {
     // Clip volume level to [0.0, 1.0]
     volumeLevel = std::clamp(volumeLevel, 0.0f, 1.0f);
-    std::transform(processName.begin(), processName.end(), processName.begin(),
-                   ::towlower);
+    std::string processNameLower = processName;
+    std::transform(processNameLower.begin(), processNameLower.end(),
+                   processNameLower.begin(), ::towlower);
 
-    if (processName == L"master") {
+    if (processNameLower == "master") {
         return setMasterVolume(volumeLevel);
     }
 
@@ -166,13 +182,13 @@ bool VolumeController::setVolumeInternal(const std::wstring &processName,
     return true;
 }
 
-bool VolumeController::setVolume(const std::wstring &processName,
+bool VolumeController::setVolume(const std::string &processName,
                                  float volumeLevel) {
     std::lock_guard<std::mutex> lock(mtx);
     return setVolumeInternal(processName, volumeLevel);
 }
 
-bool VolumeController::setVolume(const std::vector<std::wstring> &processNames,
+bool VolumeController::setVolume(const std::vector<std::string> &processNames,
                                  float volumeLevel) {
     std::lock_guard<std::mutex> lock(mtx);
     // Clip volume level to [0.0, 1.0]
@@ -196,11 +212,12 @@ bool VolumeController::toggleMasterMute() {
     return SUCCEEDED(hr);
 }
 
-bool VolumeController::toggleMuteInternal(const std::wstring &processName) {
-    std::transform(processName.begin(), processName.end(), processName.begin(),
-                   ::towlower);
+bool VolumeController::toggleMuteInternal(const std::string &processName) {
+    std::string processNameLower = processName;
+    std::transform(processNameLower.begin(), processNameLower.end(),
+                   processNameLower.begin(), ::towlower);
 
-    if (processName == L"master") {
+    if (processNameLower == "master") {
         return toggleMasterMute();
     }
 
@@ -219,13 +236,13 @@ bool VolumeController::toggleMuteInternal(const std::wstring &processName) {
     return true;
 }
 
-bool VolumeController::toggleMute(const std::wstring &processName) {
+bool VolumeController::toggleMute(const std::string &processName) {
     std::lock_guard<std::mutex> lock(mtx);
     return toggleMuteInternal(processName);
 }
 
 bool VolumeController::toggleMute(
-    const std::vector<std::wstring> &processNames) {
+    const std::vector<std::string> &processNames) {
     std::lock_guard<std::mutex> lock(mtx);
     for (const auto &processName : processNames) {
         if (!toggleMuteInternal(processName)) {

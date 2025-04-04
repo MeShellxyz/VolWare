@@ -1,33 +1,24 @@
 cmake_minimum_required(VERSION 3.5)
 project(VolFlex VERSION 0.1.0)
 
-# set appropriate encoding
-if (WIN32)
+# Define Windows API target version to avoid the warning
+if(MSVC)
+    add_definitions(-D_WIN32_WINNT=0x0601) # Windows 7
     add_compile_options(/utf-8)
-elseif(APPLE)
-    add_compile_options(-finput-charset=UTF-8)
-elseif(UNIX)
-    add_compile_options(-finput-charset=UTF-8)
 endif()
 
 include(FetchContent)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-if(WIN32)
-    add_compile_definitions(WINDOWS)
-    add_compile_definitions(_WIN32_WINNT=0x0601)
-elseif(APPLE)
-    add_compile_definitions(MACOS)
-elseif(UNIX)
-    add_compile_definitions(LINUX)
-endif()
 
 # Add source files
 set(SOURCE_FILES
     src/main.cpp
+    src/Config.cpp
+    src/SerialReader.cpp
+    src/VolumeController.cpp
 )
 
 FetchContent_Declare(

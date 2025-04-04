@@ -20,11 +20,13 @@ int main() {
                     if (config.isInvertSlider()) {
                         volumeLevel = 1.0f - volumeLevel;
                     }
-                    const std::vector<std::wstring> &apps =
+                    const std::vector<std::string> &apps =
                         config.getChannelApps().at(i);
                     volumeController.setVolume(apps, volumeLevel);
                 }
             });
+
+        serialReader.setSyncMessage("SYNC\n");
 
         if (!serialReader.start()) {
             std::cerr << "Failed to start serial reader." << std::endl;

@@ -27,30 +27,31 @@ private:
 
     // CacheProcessEntry
     struct CacheProcessEntry {
-        std::wstring name;
+        std::string name;
         std::chrono::system_clock::time_point timestamp;
     };
 
     static std::unordered_map<DWORD, CacheProcessEntry> processNameCache;
-    static std::wstring getProcessNameFromId(const DWORD &processId);
+    static std::string WideToUtf8(const wchar_t *wstr);
+    static std::string getProcessNameFromId(const DWORD &processId);
 
     std::vector<CComPtr<ISimpleAudioVolume>>
-    getAudioSessionsForProcess(const std::wstring &processName);
+    getAudioSessionsForProcess(const std::string &processName);
 
     bool setMasterVolume(float volumeLevel);
     bool toggleMasterMute();
 
-    bool setVolumeInternal(const std::wstring &processName, float volumeLevel);
-    bool toggleMuteInternal(const std::wstring &processName);
+    bool setVolumeInternal(const std::string &processName, float volumeLevel);
+    bool toggleMuteInternal(const std::string &processName);
 
 public:
     VolumeController();
     ~VolumeController();
 
-    bool setVolume(const std::wstring &processName, float volumeLevel);
-    bool setVolume(const std::vector<std::wstring> &processNames,
+    bool setVolume(const std::string &processName, float volumeLevel);
+    bool setVolume(const std::vector<std::string> &processNames,
                    float volumeLevel);
 
-    bool toggleMute(const std::wstring &processName);
-    bool toggleMute(const std::vector<std::wstring> &processNames);
+    bool toggleMute(const std::string &processName);
+    bool toggleMute(const std::vector<std::string> &processNames);
 };
