@@ -23,6 +23,17 @@
 const int potentiometerInputPins[] = {A0, A1};
 const int numPotentiometers = 2; // Number of potentiometers connected
 
+const int muteInputPins[] = {2, 3}; // Digital pins for mute buttons
+const int numMuteButtons = 0;       // Number of mute buttons connected
+
+// PinMode settings for mute buttons
+void setupMuteButtons() {
+    for (int i = 0; i < numMuteButtons; i++) {
+        pinMode(muteInputPins[i],
+                INPUT_PULLUP); // Set mute pins as input with pull-up resistor
+    }
+}
+
 // Sensitivity setting - how much a value must change to be reported
 int noiseThreshold =
     2; // Increase to filter more noise, decrease for higher sensitivity
@@ -32,10 +43,11 @@ int noiseThreshold =
  * Initializes communication and validates settings
  */
 // Array to store previous readings for comparison
-int prevPotValue[numPotentiometers] = {};
+int potValues[numPotentiometers] = {};
+byte muteValues[numPotentiometers] = {}; // Initialize mute values
 void setup() {
-    // Start serial communication at 9600 bits per second
-    Serial.begin(9600);
+    // Start serial communication at 115200 bits per second
+    Serial.begin(115200);
 
     // Safety check to prevent threshold being too low
     if (noiseThreshold < 1) {
@@ -56,32 +68,50 @@ void loop() {
     // Flag to track if any potentiometer changed significantly
     bool changed = false;
 
+    // Check serial port for sync command
+    if (Serial.available()) {
+        char c = Serial.read(); // Read the incoming byte
+        if (c == 's') {
+            changed = true;
+        } // Set changed to true if 's' is received
+    }
+
     // Read each potentiometer one by one
     for (int i = 0; i < numPotentiometers; i++) {
-        delay(10); // Short pause for stable readings
-
         // Read the current position of the potentiometer (range: 0-1023)
-        int potentiometerReading = analogRead(potentiometerInputPins[i]);
+        int potReading = analogRead(potentiometerInputPins[i]);
+        byte muteReading = digitalRead(potentiometerInputPins[i]);
 
-        // Check if value changed enough to be reported (beyond noise threshold)
-        if (abs(prevPotValue[i] - potentiometerReading) >= noiseThreshold) {
-            prevPotValue[i] = potentiometerReading; // Update stored value
-            changed = true; // Mark that we have a significant change
+        // Check if value changed enough to be reported (beyond noise
+        // threshold)
+        if (abs(potValues[i] - potReading) >= noiseThreshold) {
+            potValues[i] = potReading; // Update stored value
+            changed = true;            // Mark that we have a significant change
         }
+
+        // Check if mute button pressed
+        // if (muteReading == HIGH) {
+        //     muteValues[i] = muteValues[i] == 0 ? 1 : 0; // Toggle mute state
+        //     changed = true; // Mark that we have a significant change
+        // }
 
         // Build the output message with all current values
         // Format: "value1,value2\n"
-        msg +=
-            (i != numPotentiometers - 1)
-                ? String(potentiometerReading) + "," // Add comma between values
-                : String(potentiometerReading) +
-                      "\n"; // Add newline after last value
     }
+
+    for (int i = 0; i < numPotentiometers; i++) {
+        msg += String(potValues[i]); // Append potentiometer value to message
+        msg += ",";                  // Add comma separator
+    }
+    for (int i = 0; i < numMuteButtons; i++) {
+        msg += String(muteValues[i]); // Append mute value to message
+        msg += ",";                   // Add comma separator
+    }
+    msg.remove(msg.length() - 1); // Remove the last comma
+    msg += "\n";                  // Add newline character at the end
 
     // Only send data when at least one value has changed significantly
     if (changed) {
         Serial.print(msg); // Send the formatted message
     }
-
-    delay(50); // Wait before next reading cycle - adjust for response speed
 }
