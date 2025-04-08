@@ -3,11 +3,28 @@ project(VolFlex VERSION 0.1.0)
 
 # Define Windows API target version to avoid the warning
 if(MSVC)
-    add_definitions(-D_WIN32_WINNT=0x0601) # Windows 7
+    add_definitions(-D_WIN32_WINNT=0x0601) 
     add_compile_options(/utf-8)
 endif()
 
 include(FetchContent)
+
+# Add compiler definitions for OS
+if (WIN32)
+    add_compile_definitions(WINDOWS)
+    set(PLATFORM_SOURCES
+        src/VolumeController/VolumeControllerImpl_Windows.cpp)
+elseif (UNIX)
+    add_compile_definitions(LINUX)
+    set(PLATFORM_SOURCES
+        src/VolumeController/VolumeControllerImpl_Linux.cpp)
+elseif (APPLE)
+    add_compile_definitions(MACOS)
+    set(PLATFORM_SOURCES
+        src/VolumeController/VolumeControllerImpl_MacOS.cpp)
+else()
+    message(FATAL_ERROR "Unsupported OS")
+endif()
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -18,7 +35,7 @@ set(SOURCE_FILES
     src/main.cpp
     src/Config.cpp
     src/SerialReader.cpp
-    src/VolumeController.cpp
+    src/VolumeController/VolumeController.cpp
 )
 
 FetchContent_Declare(
@@ -38,9 +55,12 @@ set(BOOST_ENABLE_CMAKE ON)
 FetchContent_MakeAvailable(boost)
 
 # Create the executable
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${PLATFORM_SOURCES})
 
 # Include directories
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC
+                            ${CMAKE_CURRENT_SOURCE_DIR}/include 
+                            ${CMAKE_CURRENT_SOURCE_DIR}/include/VolumeController
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp Boost::system Boost::asio)

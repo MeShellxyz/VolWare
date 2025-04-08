@@ -1,4 +1,5 @@
 #pragma once
+#include "VolumeController.h"
 
 #include <windows.h>
 
@@ -14,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-class VolumeController {
+class VolumeController::Impl {
 private:
     std::mutex mtx;
 
@@ -38,15 +39,15 @@ private:
     std::vector<CComPtr<ISimpleAudioVolume>>
     getAudioSessionsForProcess(const std::string &processName);
 
-    bool setMasterVolume(float volumeLevel);
-    bool setMasterMute(int mute);
-
     bool setVolumeInternal(const std::string &processName, float volumeLevel);
     bool setMuteInternal(const std::string &processName, int mute);
 
 public:
-    VolumeController();
-    ~VolumeController();
+    Impl();
+    ~Impl();
+
+    bool setMasterVolume(float volumeLevel);
+    bool setMasterMute(int mute);
 
     bool setVolume(const std::string &processName, float volumeLevel);
     bool setVolume(const std::vector<std::string> &processNames,
