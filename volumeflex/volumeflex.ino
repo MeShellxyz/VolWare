@@ -46,7 +46,7 @@ int noiseThreshold =
 int potValues[numPotentiometers] = {};
 byte muteValues[numPotentiometers] = {}; // Initialize mute values
 void setup() {
-    // Start serial communication at 115200 bits per second
+    // Start serial communication
     Serial.begin(115200);
 
     // Safety check to prevent threshold being too low
@@ -78,6 +78,7 @@ void loop() {
 
     // Read each potentiometer one by one
     for (int i = 0; i < numPotentiometers; i++) {
+        delay(10);
         // Read the current position of the potentiometer (range: 0-1023)
         int potReading = analogRead(potentiometerInputPins[i]);
         byte muteReading = digitalRead(potentiometerInputPins[i]);
