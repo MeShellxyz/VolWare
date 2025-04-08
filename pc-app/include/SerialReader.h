@@ -18,7 +18,8 @@ private:
     bool openPort();
     bool closePort();
 
-    bool sendMessage(const std::string &message);
+    void sendMessage(const std::string &message,
+                     std::function<void(bool success)> callback = nullptr);
     void sendSyncMessage();
     void scheduleSyncTimer();
 

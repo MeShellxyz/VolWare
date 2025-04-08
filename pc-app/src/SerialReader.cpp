@@ -73,30 +73,45 @@ bool SerialReader::closePort() {
     return true;
 }
 
-bool SerialReader::sendMessage(const std::string &message) {
+void SerialReader::sendMessage(const std::string &message,
+                               std::function<void(bool success)> callback) {
     if (!mConnected || !mSerialPort.is_open()) {
-        return false;
+        if (callback)
+            callback(false);
+        return;
     }
 
-    try {
-        boost::asio::write(mSerialPort, boost::asio::buffer(message));
-        return true;
-    } catch (const std::exception &e) {
-        std::cerr << "Error sending message: " << e.what() << std::endl;
-        return false;
-    }
+    // Create a shared_ptr to keep the message alive during async operation
+    auto messageBuffer = std::make_shared<std::string>(message);
+
+    boost::asio::async_write(
+        mSerialPort, boost::asio::buffer(*messageBuffer),
+        [this, messageBuffer, callback](const boost::system::error_code &error,
+                                        std::size_t bytes_transferred) {
+            if (error) {
+                std::cerr << "Error sending message: " << error.message()
+                          << std::endl;
+                if (callback)
+                    callback(false);
+                return;
+            }
+            if (callback)
+                callback(true);
+        });
 }
 
 void SerialReader::sendSyncMessage() {
     if (mConnected && mRunning) {
-        if (!sendMessage(mSyncMessage)) {
-            std::cerr << "Failed to send sync message." << std::endl;
-            mConnected = false;
-            closePort();
-            mIoService.reset();
-            return;
-        }
-        scheduleSyncTimer();
+        sendMessage(mSyncMessage, [this](bool success) {
+            if (!success) {
+                std::cerr << "Failed to send sync message." << std::endl;
+                mConnected = false;
+                closePort();
+                mIoService.reset();
+                return;
+            }
+            scheduleSyncTimer();
+        });
     }
 }
 

@@ -201,33 +201,25 @@ bool VolumeController::setVolume(const std::vector<std::string> &processNames,
     return true;
 }
 
-bool VolumeController::toggleMasterMute() {
+bool VolumeController::setMasterMute(int mute) {
     // toggle master mute
-
-    BOOL isMuted = FALSE;
-    HRESULT hr = pEndpointVolume->GetMute(&isMuted);
-    if (SUCCEEDED(hr)) {
-        hr = pEndpointVolume->SetMute(!isMuted, nullptr);
-    }
+    HRESULT hr = pEndpointVolume->SetMute(mute, nullptr);
     return SUCCEEDED(hr);
 }
 
-bool VolumeController::toggleMuteInternal(const std::string &processName) {
+bool VolumeController::setMuteInternal(const std::string &processName,
+                                       int mute) {
     std::string processNameLower = processName;
     std::transform(processNameLower.begin(), processNameLower.end(),
                    processNameLower.begin(), ::towlower);
 
     if (processNameLower == "master") {
-        return toggleMasterMute();
+        return setMasterMute(mute);
     }
 
     for (auto &session : getAudioSessionsForProcess(processName)) {
         if (session) {
-            BOOL isMuted = FALSE;
-            HRESULT hr = session->GetMute(&isMuted);
-            if (SUCCEEDED(hr)) {
-                hr = session->SetMute(!isMuted, nullptr);
-            }
+            HRESULT hr = session->SetMute(mute, nullptr);
             if (FAILED(hr)) {
                 return false;
             }
@@ -236,16 +228,16 @@ bool VolumeController::toggleMuteInternal(const std::string &processName) {
     return true;
 }
 
-bool VolumeController::toggleMute(const std::string &processName) {
+bool VolumeController::setMute(const std::string &processName, int mute) {
     std::lock_guard<std::mutex> lock(mtx);
-    return toggleMuteInternal(processName);
+    return setMuteInternal(processName, mute);
 }
 
-bool VolumeController::toggleMute(
-    const std::vector<std::string> &processNames) {
+bool VolumeController::setMute(const std::vector<std::string> &processNames,
+                               int mute) {
     std::lock_guard<std::mutex> lock(mtx);
     for (const auto &processName : processNames) {
-        if (!toggleMuteInternal(processName)) {
+        if (!setMuteInternal(processName, mute)) {
             return false;
         }
     }

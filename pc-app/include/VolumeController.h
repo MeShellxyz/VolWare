@@ -39,10 +39,10 @@ private:
     getAudioSessionsForProcess(const std::string &processName);
 
     bool setMasterVolume(float volumeLevel);
-    bool toggleMasterMute();
+    bool setMasterMute(int mute);
 
     bool setVolumeInternal(const std::string &processName, float volumeLevel);
-    bool toggleMuteInternal(const std::string &processName);
+    bool setMuteInternal(const std::string &processName, int mute);
 
 public:
     VolumeController();
@@ -52,6 +52,6 @@ public:
     bool setVolume(const std::vector<std::string> &processNames,
                    float volumeLevel);
 
-    bool toggleMute(const std::string &processName);
-    bool toggleMute(const std::vector<std::string> &processNames);
+    bool setMute(const std::string &processName, int mute);
+    bool setMute(const std::vector<std::string> &processNames, int mute);
 };
