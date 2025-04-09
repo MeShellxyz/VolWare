@@ -27,21 +27,39 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         SerialReader serialReader(config.getComPort(), config.getBaudRate());
 
-        serialReader.setCallback(
-            [&volumeController, &config](const std::vector<int> &data) {
+        if (config.isMuteButtons()) {
+            serialReader.setCallback([&volumeController,
+                                      &config](const std::vector<int> &data) {
                 for (int i = 0; i < data.size() && i < config.getChannelCount();
                      ++i) {
                     float volumeLevel = static_cast<float>(data[i]) / 1024.0f;
                     if (config.isInvertSlider()) {
                         volumeLevel = 1.0f - volumeLevel;
                     }
-                    // int mute = data[i + config.getChannelCount()];
+                    int mute = data[i + config.getChannelCount()];
+
                     const std::vector<std::string> &apps =
                         config.getChannelApps().at(i);
                     volumeController.setVolume(apps, volumeLevel);
-                    // volumeController.setMute(apps, mute);
+                    volumeController.setMute(apps, mute);
                 }
             });
+        } else {
+            serialReader.setCallback([&volumeController,
+                                      &config](const std::vector<int> &data) {
+                for (int i = 0; i < data.size() && i < config.getChannelCount();
+                     ++i) {
+                    float volumeLevel = static_cast<float>(data[i]) / 1024.0f;
+                    if (config.isInvertSlider()) {
+                        volumeLevel = 1.0f - volumeLevel;
+                    }
+
+                    const std::vector<std::string> &apps =
+                        config.getChannelApps().at(i);
+                    volumeController.setVolume(apps, volumeLevel);
+                }
+            });
+        }
 
         serialReader.setSyncMessage("s");
 

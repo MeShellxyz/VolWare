@@ -35,6 +35,11 @@ void Config::loadConfig() {
         } else {
             throw std::runtime_error("Missing 'auto_start' in config file.");
         }
+        if (config["mute_buttons"]) {
+            mMuteButtons = config["mute_buttons"].as<bool>();
+        } else {
+            throw std::runtime_error("Missing 'mute_buttons' in config file.");
+        }
         if (config["channel_apps"]) {
             int channelCount = config["channel_apps"].size();
             for (const auto &channel : config["channel_apps"]) {

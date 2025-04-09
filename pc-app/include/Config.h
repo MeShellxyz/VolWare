@@ -11,6 +11,7 @@ private:
 
     std::string mComPort;
     int mBaudRate;
+    bool mMuteButtons;
     bool mInvertSlider;
     bool mAutoStart;
     std::unordered_map<int, std::vector<std::string>> mChannelApps;
@@ -23,6 +24,7 @@ public:
 
     const std::string &getComPort() const { return mComPort; };
     int getBaudRate() const { return mBaudRate; };
+    bool isMuteButtons() const { return mMuteButtons; };
     bool isInvertSlider() const { return mInvertSlider; };
     bool isAutoStart() const { return mAutoStart; };
     const std::unordered_map<int, std::vector<std::string>> &
