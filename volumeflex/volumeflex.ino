@@ -11,8 +11,9 @@
  * - Connect outer pins of each potentiometer to 5V and GND
  *
  * OUTPUT FORMAT:
- * value1,value2
+ * value1,value2,...,mute1,mute2,...\n
  * - where values are between 0-1023 representing potentiometer positions
+ * - mute values are 0 or 1 indicating mute state (if applicable)
  */
 
 /*
@@ -48,6 +49,10 @@ byte muteValues[numPotentiometers] = {}; // Initialize mute values
 void setup() {
     // Start serial communication
     Serial.begin(115200);
+
+    if (numMuteButtons > 0) {
+        setupMuteButtons(); // Setup mute buttons if any are connected
+    }
 
     // Safety check to prevent threshold being too low
     if (noiseThreshold < 1) {
@@ -91,13 +96,13 @@ void loop() {
         }
 
         // Check if mute button pressed
-        // if (muteReading == HIGH) {
-        //     muteValues[i] = muteValues[i] == 0 ? 1 : 0; // Toggle mute state
-        //     changed = true; // Mark that we have a significant change
-        // }
+        if (muteReading == HIGH && numMuteButtons > 0) {
+            muteValues[i] = muteValues[i] == 0 ? 1 : 0; // Toggle mute state
+            changed = true; // Mark that we have a significant change
+        }
 
-        // Build the output message with all current values
-        // Format: "value1,value2\n"
+        // Build the output message with all current values Format
+        //  : "value1,value2\n"
     }
 
     for (int i = 0; i < numPotentiometers; i++) {
