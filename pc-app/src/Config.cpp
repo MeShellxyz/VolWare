@@ -30,6 +30,11 @@ void Config::loadConfig() {
         } else {
             throw std::runtime_error("Missing 'invert_slider' in config file.");
         }
+        if (config["auto_start"]) {
+            mAutoStart = config["auto_start"].as<bool>();
+        } else {
+            throw std::runtime_error("Missing 'auto_start' in config file.");
+        }
         if (config["channel_apps"]) {
             int channelCount = config["channel_apps"].size();
             for (const auto &channel : config["channel_apps"]) {

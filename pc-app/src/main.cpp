@@ -5,10 +5,25 @@
 #include <string>
 #include <vector>
 
-int main() {
+#if defined(_WIN32) || defined(_WIN64)
+
+#include <windows.h>
+
+#include "WindowsAutostart.h"
+#include "WindowsTray.h"
+
+#include <atomic>
+
+std::atomic<bool> g_running = true;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nCmdShow) {
     try {
-        VolumeController volumeController;
         Config config;
+
+        AutoStart::SetAutoStart(config.isAutoStart());
+
+        VolumeController volumeController;
 
         SerialReader serialReader(config.getComPort(), config.getBaudRate());
 
@@ -35,16 +50,32 @@ int main() {
             return 1;
         }
 
-        std::cout << "Serial reader started. Listening for data..."
-                  << std::endl;
+        WindowsTray tray(hInstance, "VolWare Volume Controller");
 
-        std::cout << "Press Enter to exit..." << std::endl;
-        std::cin.get();
+        tray.setOnExitCallback([&]() {
+            g_running = false;
+            PostQuitMessage(0);
+        });
+
+        MSG msg;
+        while (g_running) {
+            if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+                if (msg.message == WM_QUIT) {
+                    g_running = false;
+                }
+            } else {
+                Sleep(100); // Sleep to prevent high CPU usage
+            }
+        }
+
         serialReader.stop();
+        return 0;
     } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-
-    return 0;
 }
+
+#endif // _WIN32 || _WIN64
