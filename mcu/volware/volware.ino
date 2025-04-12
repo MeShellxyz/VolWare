@@ -25,6 +25,7 @@ const int potentiometerInputPins[] = {A0, A1};
 const int numPotentiometers = 2; // Number of potentiometers connected
 
 const int muteInputPins[] = {2, 3}; // Digital pins for mute buttons
+const int muteLedPins[] = {4, 5};   // Digital pins for mute LEDs
 const int numMuteButtons = 0;       // Number of mute buttons connected
 
 // PinMode settings for mute buttons
@@ -32,6 +33,9 @@ void setupMuteButtons() {
     for (int i = 0; i < numMuteButtons; i++) {
         pinMode(muteInputPins[i],
                 INPUT_PULLUP); // Set mute pins as input with pull-up resistor
+        pinMode(muteLedPins[i], OUTPUT); // Set mute LED pins as output
+        digitalWrite(muteLedPins[i],
+                     LOW); // Initialize mute LEDs to off (LOW)
     }
 }
 
@@ -98,6 +102,8 @@ void loop() {
         // Check if mute button pressed
         if (muteReading == HIGH && numMuteButtons > 0) {
             muteValues[i] = muteValues[i] == 0 ? 1 : 0; // Toggle mute state
+            digitalWrite(muteLedPins[i],
+                         muteValues[i] == 1 ? HIGH : LOW); // Update LED
             changed = true; // Mark that we have a significant change
         }
 
