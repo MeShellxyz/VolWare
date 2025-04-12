@@ -16,22 +16,22 @@
 
 ## 📋 Table of Contents
 
-- [Features](#-features)
-- [How It Works](#-how-it-works)
-- [Hardware Requirements](#-hardware-requirements)
-- [Software Requirements](#-software-requirements)
-- [Quick Start Guide](#-quick-start-guide)
-- [Configuration](#-configuration)
-- [Building from Source](#-building-from-source)
-- [Acknowledgments](#-acknowledgments)
-- [License](#-license)
-- [Contributing](#-contributing)
+- [✨ Features](#-features)
+- [🔍 How It Works](#-how-it-works)
+- [🔧 Hardware Requirements](#-hardware-requirements)
+- [💻 Software Requirements](#-software-requirements)
+- [🚀 Quick Start Guide](#-quick-start-guide)
+- [⚙️ Configuration](#-configuration)
+- [🛠️ Building from Source](#-building-from-source)
+- [🙏 Acknowledgments](#-acknowledgments)
+- [📜 License](#-license)
+- [🤝 Contributing](#-contributing)
 
 ## What is VolWare?
 
 VolWare transforms physical potentiometers into precise volume controls for your Windows system. Adjust your master volume or fine-tune individual applications with a simple twist of a knob – no more hunting through windows and menus to manage your audio environment.
 
-## Features
+## ✨ Features
 
 - Physical volume control via potentiometers
 - Per-app audio level adjustment 
@@ -153,5 +153,5 @@ While I'm not actively maintaining contribution guidelines at the moment, pull r
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/yourusername">Your Name</a></sub>
+  <sub>Built with ❤️ by <a href="https://github.com/MeShellxyz">>MeShell</a></sub>
 </div>
