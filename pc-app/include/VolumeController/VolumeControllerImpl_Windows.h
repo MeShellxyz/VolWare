@@ -1,32 +1,46 @@
 #pragma once
 #include "VolumeController.h"
 
-#include <windows.h>
-
 #include <atlbase.h>
 #include <audiopolicy.h>
 #include <endpointvolume.h>
 #include <mmdeviceapi.h>
-
-#include <mutex>
+#include <windows.h>
 
 #include <chrono>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+/**
+ * Windows-specific implementation of VolumeController
+ */
 class VolumeController::Impl {
-private:
-    std::mutex mtx;
+public:
+    Impl();
+    ~Impl();
 
+    // Volume control methods
+    bool setMasterVolume(float volumeLevel);
+    bool setVolume(const std::string &processName, float volumeLevel);
+    bool setVolume(const std::vector<std::string> &processNames,
+                   float volumeLevel);
+
+    // Mute control methods
+    bool setMasterMute(int mute);
+    bool setMute(const std::string &processName, int mute);
+    bool setMute(const std::vector<std::string> &processNames, int mute);
+
+private:
+    // Windows COM initialization
     bool initializeCOM();
 
-    CComPtr<IMMDeviceEnumerator> pEnumerator;
-    CComPtr<IMMDevice> pDevice;
-    CComPtr<IAudioEndpointVolume> pEndpointVolume;
-    CComPtr<IAudioSessionManager2> pSessionManager;
+    // Internal implementation methods (thread-unsafe)
+    bool setVolumeInternal(const std::string &processName, float volumeLevel);
+    bool setMuteInternal(const std::string &processName, int mute);
 
-    // CacheProcessEntry
+    // Process utilities
     struct CacheProcessEntry {
         std::string name;
         std::chrono::system_clock::time_point timestamp;
@@ -36,23 +50,16 @@ private:
     static std::string WideToUtf8(const wchar_t *wstr);
     static std::string getProcessNameFromId(const DWORD &processId);
 
+    // Audio session management
     std::vector<CComPtr<ISimpleAudioVolume>>
     getAudioSessionsForProcess(const std::string &processName);
 
-    bool setVolumeInternal(const std::string &processName, float volumeLevel);
-    bool setMuteInternal(const std::string &processName, int mute);
+    // Windows COM interfaces
+    CComPtr<IMMDeviceEnumerator> pEnumerator;
+    CComPtr<IMMDevice> pDevice;
+    CComPtr<IAudioEndpointVolume> pEndpointVolume;
+    CComPtr<IAudioSessionManager2> pSessionManager;
 
-public:
-    Impl();
-    ~Impl();
-
-    bool setMasterVolume(float volumeLevel);
-    bool setMasterMute(int mute);
-
-    bool setVolume(const std::string &processName, float volumeLevel);
-    bool setVolume(const std::vector<std::string> &processNames,
-                   float volumeLevel);
-
-    bool setMute(const std::string &processName, int mute);
-    bool setMute(const std::vector<std::string> &processNames, int mute);
+    // Thread safety
+    std::mutex mtx;
 };

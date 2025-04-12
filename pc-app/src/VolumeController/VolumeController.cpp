@@ -10,12 +10,18 @@
 #error "Unsupported platform"
 #endif
 
+// Constructor
 VolumeController::VolumeController() : pImpl(std::make_unique<Impl>()) {}
+
+// Destructor
 VolumeController::~VolumeController() = default;
+
+// Move constructor/assignment
 VolumeController::VolumeController(VolumeController &&) noexcept = default;
 VolumeController &
 VolumeController::operator=(VolumeController &&) noexcept = default;
 
+// Volume control methods
 bool VolumeController::setMasterVolume(float volumeLevel) {
     return pImpl->setMasterVolume(volumeLevel);
 }
@@ -30,6 +36,7 @@ bool VolumeController::setVolume(const std::vector<std::string> &processNames,
     return pImpl->setVolume(processNames, volumeLevel);
 }
 
+// Mute control methods
 bool VolumeController::setMasterMute(int mute) {
     return pImpl->setMasterMute(mute);
 }

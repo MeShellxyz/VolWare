@@ -8,53 +8,60 @@
 #include <thread>
 #include <vector>
 
-typedef std::function<void(const std::vector<int> &)> SerialInputCallback;
+// Define callback type for serial input processing
+using SerialInputCallback = std::function<void(const std::vector<int> &)>;
 
 class SerialReader {
-private:
-    const unsigned int RECONNECT_INTERVAL_MS = 1000;
-    const unsigned int SYNC_INTERVAL_MS = 1000;
-
-    bool openPort();
-    bool closePort();
-
-    void sendMessage(const std::string &message,
-                     std::function<void(bool success)> callback = nullptr);
-    void sendSyncMessage();
-    void scheduleSyncTimer();
-
-    void readStart();
-    void readComplete(const boost::system::error_code &error,
-                      size_t bytes_transferred);
-
-    void workerThread();
-
-    std::string mPortName;
-    unsigned int mBaudRate;
-    SerialInputCallback mCallback;
-    std::string mSyncMessage;
-
-    boost::asio::io_service mIoService;
-    boost::asio::serial_port mSerialPort;
-    boost::asio::streambuf mReadBuffer;
-    std::unique_ptr<boost::asio::steady_timer> mSyncTimer;
-
-    std::jthread mWorkerThread;
-
-    std::atomic<bool> mRunning;
-    std::atomic<bool> mConnected;
-
 public:
     SerialReader(const std::string &port, unsigned int baudRate);
     ~SerialReader();
 
     bool start();
     void stop();
+    bool isConnected() const { return m_connected; }
 
-    bool isConnected() const { return mConnected; }
+    void setCallback(SerialInputCallback callback) {
+        m_callback = std::move(callback);
+    }
+    void setSyncMessage(const std::string &syncMsg) { m_syncMessage = syncMsg; }
 
-    void setCallback(std::function<void(const std::vector<int> &)> callback) {
-        mCallback = callback;
-    };
-    void setSyncMessage(const std::string &syncMsg) { mSyncMessage = syncMsg; }
+private:
+    // Constants
+    static constexpr unsigned int RECONNECT_INTERVAL_MS = 1000;
+    static constexpr unsigned int SYNC_INTERVAL_MS = 1000;
+
+    // Port operations
+    bool openPort();
+    bool closePort();
+
+    // Message handling
+    void sendMessage(const std::string &message,
+                     std::function<void(bool success)> callback = nullptr);
+    void sendSyncMessage();
+    void scheduleSyncTimer();
+
+    // Reading operations
+    void readStart();
+    void readComplete(const boost::system::error_code &error,
+                      size_t bytesTransferred);
+
+    // Thread management
+    void workerThread();
+
+    // Configuration
+    std::string m_portName;
+    unsigned int m_baudRate;
+    std::string m_syncMessage;
+    SerialInputCallback m_callback;
+
+    // Boost ASIO objects
+    boost::asio::io_service m_ioService;
+    boost::asio::serial_port m_serialPort;
+    boost::asio::streambuf m_readBuffer;
+    std::unique_ptr<boost::asio::steady_timer> m_syncTimer;
+
+    // Thread and state
+    std::jthread m_workerThread;
+    std::atomic<bool> m_running{false};
+    std::atomic<bool> m_connected{false};
 };
