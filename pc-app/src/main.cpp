@@ -26,6 +26,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         // Initialize volume controller
         VolumeController volumeController;
+        Sleep(100);
 
         // Initialize serial communication
         SerialReader serialReader(config.getComPort(), config.getBaudRate());
@@ -46,7 +47,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     }
 
                     // Get mute state
-                    int mute = data[i + config.getChannelCount()];
+                    int mute = data[i + config.getChannelCount() + 1];
 
                     // Apply to all applications mapped to this channel
                     const std::vector<std::string> &apps =
