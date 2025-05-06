@@ -19,12 +19,12 @@
 // =================== USER SPECIFIC SETTINGS ===================
 
 // Hardware configuration
-const int potentiometerInputPins[] = {A0, A1};
-const int numPotentiometers = 2; // Number of potentiometers connected
+const int potentiometerInputPins[] = {A0, A1, A2, A3, A4};
+const int numPotentiometers = 5; // Number of potentiometers connected
 
-const int muteInputPins[] = {2, 3}; // Digital pins for mute buttons
-const int muteLedPins[] = {4, 5};   // Digital pins for mute LEDs
-const int numMuteButtons = 0;       // Number of mute buttons connected
+const int muteInputPins[] = {6, 5, 4, 3, 2}; // Digital pins for mute buttons
+const int muteLedPins[] = {11, 10, 9, 8, 7};   // Digital pins for mute LEDs
+const int numMuteButtons = 5;       // Number of mute buttons connected
 
 // Sensitivity setting - how much a value must change to be reported
 const int noiseThreshold =
@@ -35,6 +35,7 @@ const int noiseThreshold =
 // Arrays to store previous readings for comparison
 int potValues[numPotentiometers] = {};
 byte muteValues[numPotentiometers] = {};
+byte previousButtonStates[numMuteButtons] = {};
 
 /**
  * Sets up mute buttons with proper pin modes
@@ -45,6 +46,8 @@ void setupMuteButtons() {
                 INPUT_PULLUP); // Set mute pins as input with pull-up resistor
         pinMode(muteLedPins[i], OUTPUT);   // Set mute LED pins as output
         digitalWrite(muteLedPins[i], LOW); // Initialize mute LEDs to off (LOW)
+        muteValues[i] = 0; // Initialize mute values to 0 (not muted)
+        previousButtonStates[i] = LOW; // Initialize previous button states
     }
 }
 
@@ -93,7 +96,7 @@ void loop() {
 
         // Read the current position of the potentiometer (range: 0-1023)
         int potReading = analogRead(potentiometerInputPins[i]);
-        byte muteReading = digitalRead(potentiometerInputPins[i]);
+        byte muteReading = digitalRead(muteInputPins[i]);
 
         // Check if value changed enough to be reported (beyond noise threshold)
         if (abs(potValues[i] - potReading) >= noiseThreshold) {
@@ -102,12 +105,15 @@ void loop() {
         }
 
         // Check if mute button pressed
-        if (muteReading == HIGH && numMuteButtons > 0) {
+        if (previousButtonStates[i] == HIGH && muteReading == LOW && numMuteButtons > 0) {
             muteValues[i] = muteValues[i] == 0 ? 1 : 0; // Toggle mute state
             digitalWrite(muteLedPins[i],
                          muteValues[i] == 1 ? HIGH : LOW); // Update LED
             changed = true; // Mark that we have a significant change
         }
+
+        // Update previous button state for next loop iteration
+        previousButtonStates[i] = muteReading;
     }
 
     // Build the output message with all current values
